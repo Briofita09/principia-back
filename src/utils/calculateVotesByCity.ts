@@ -1,6 +1,7 @@
-export default function calculateVotesbyCity(pool: any[]){
+import { IPool } from "src/interfaces/interfaces";
+
+export default function calculateVotesbyCity(pool: IPool[]){
   const resultados = {};
-  const totalVotes = []
 
   for (const pesquisa of pool) {
     const key = `${pesquisa.municipio}-${pesquisa.UF}`; 
@@ -16,7 +17,6 @@ export default function calculateVotesbyCity(pool: any[]){
       };
     }
 
-    // Contar os votos
     const candidato = pesquisa.candidato;
     if (!resultados[key].candidatos[candidato]) {
       resultados[key].candidatos[candidato] = 0; 
@@ -26,18 +26,4 @@ export default function calculateVotesbyCity(pool: any[]){
 
   // Converter o objeto de resultados em um array
   return Object.values(resultados);
-
-  /*votes.map((el: any) => {
-    const candidatos = el.candidatos;
-    const city = cities.filter(c => c.municipio === el.municipio)
-    if(city.length > 0){
-      let population = parseInt(city[0].pop.replace('.',''), 10)
-      const totalVotos: any = Object.values(candidatos).reduce((acc: any, votos: any) => acc + votos, 0);
-      for(let candidato in candidatos) {
-        //console.log(candidatos[candidato], totalVotos)
-        candidatos[candidato] = candidatos[candidato] === 0 ? '0' : Math.round((candidatos[candidato]/totalVotos)*population).toString()
-        //console.log(candidatos[candidato])
-      }
-    }
-  })*/
 }

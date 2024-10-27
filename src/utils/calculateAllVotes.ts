@@ -6,10 +6,9 @@ import calculateVotesByCity from './calculateVotesByCity';
 import sortCitiesByState from './sortCitiesByState';
 
 export default async function calculateAllVotes(cities) {
-  // Caminho da pasta que você quer listar os arquivos
+  
   const filesPath = './workbooks';
 
-  // Função para listar os arquivos como array de strings
   const files = fs.readdirSync(filesPath)
     .filter(file => fs.statSync(path.join(filesPath, file)).isFile())
     .map(file => file.replace('.csv', '')); 

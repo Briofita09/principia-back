@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { parse } from "csv-parse";
-import iconv from 'iconv-lite';
 
 export default async function readCsv(pool){
     return new Promise((resolve, reject) => {

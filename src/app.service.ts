@@ -1,38 +1,74 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { Injectable } from '@nestjs/common';
 import readCsv from './utils/readCsv';
-import calculateVotesByCity from './utils/calculateVotesByCity';
-import { BigQuery } from '@google-cloud/bigquery';
-import sortCitiesByState from './utils/sortCitiesByState';
-import sortVotesByUf from './utils/classificateCities';
-import calculateTotalVotes from './utils/calculateTotalVotes';
+import { PrismaService } from './prisma.service';
 import calculateAllVotes from './utils/calculateAllVotes';
+import { Cron } from '@nestjs/schedule';
+import { ICities } from './interfaces/interfaces';
 
 
-@Injectable()
 @Injectable()
 export class AppService {
-  private cities: any;
+  private cities: ICities[];
 
-  constructor() {
+  constructor(private prismaService: PrismaService) {
     this.initializeCities();
   }
 
   private async initializeCities() {
-    this.cities = await readCsv('pop2022');
+    this.cities = await this.readDatabase()
   }
 
-  async getHello(): Promise<string> {
-    const pools = ["P2"];
+  getHello(): string {
+    return 'Hello World';
+  }
 
-    await Promise.all(pools.map(async (p) => {
-      const data: any = await readCsv(p);
-      const votes = calculateVotesByCity(data);
-      const sortedVotesByState = sortCitiesByState(votes);
-      const votesByGroupbyUF = sortVotesByUf(sortedVotesByState, this.cities);
-      // console.log(calculateTotalVotes(votesByGroupbyUF));
-      console.log(await calculateAllVotes(this.cities));
-    }));
+  async getVotesByUf(uf: string) {
+    const state = uf.toUpperCase()
+    const allVotes = await calculateAllVotes(this.cities)
+    const result = allVotes.map(el => {
+      return el[state] ? { [state]: el[state] } : null;
+    }).filter(Boolean)
+    return result.length > 0 ? result : { [state]: {} };
+  }
 
-    return 'ola';
+  async fileUpload(file: Express.Multer.File): Promise<string> {
+    const uploadPath = path.join(__dirname, '..', 'workbooks', file.originalname)
+    fs.writeFile(uploadPath, file.buffer, (err) => {
+      if (err) {
+        throw new Error('Erro ao salvar o arquivo')
+      }
+    })
+    return 'Arquivo salvo corretamente'
+  }
+
+  @Cron('* 0 0 1 * *')
+  async updateDatabase() {
+    console.log('data base updated')
+    const data: any = await readCsv('pop2022')
+    data.forEach(async (d) => {
+      await this.prismaService.city.upsert({
+        where: { codMun: d.codMun },
+        create: {
+          uf: d.uf,
+          codUf: d.codUf,
+          municipio: d.municipio,
+          pop: d.pop,
+          codMun: d.codMun
+        },
+        update: {
+          uf: d.uf,
+          codUf: d.codUf,
+          municipio: d.municipio,
+          pop: d.pop,
+          codMun: d.codMun
+        }
+      })
+    })
+  }
+
+  async readDatabase() {
+    return await this.prismaService.city.findMany()
   }
 }
